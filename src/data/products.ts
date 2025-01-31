@@ -1,5 +1,5 @@
 import { Product } from '../types';
-import { Laptop, BookOpen, Video, Code, Ticket } from 'lucide-react';
+import { Laptop, BookOpen, Video, Code } from 'lucide-react';
 
 export const CATEGORIES = [
   { id: '1', name: 'Software', icon: Laptop },

@@ -1,16 +1,72 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
-import { products } from '../data/products'
+import { doc, getDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
+import { Product } from '../types'
 import BottomNav from '../components/BottomNav'
 
 export default function ProductDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  
-  const product = products.find(p => p.id === id)
-  
-  if (!product) {
-    return <div className="p-4">Product not found</div>
+  const [product, setProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!id) return
+      
+      setIsLoading(true)
+      try {
+        const docRef = doc(db, 'products', id)
+        const docSnap = await getDoc(docRef)
+        
+        if (docSnap.exists()) {
+          setProduct({
+            id: docSnap.id,
+            ...docSnap.data()
+          } as Product)
+        } else {
+          setError('Product not found')
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err)
+        setError('Error loading product details')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [id])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading product details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-xl text-gray-800 font-semibold mb-4">{error || 'Product not found'}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            Back to Home
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -40,7 +96,7 @@ export default function ProductDetail() {
         {/* Product Image */}
         <div className="w-full h-64">
           <img
-            src={product.image}
+            src={product.image || product.featuredImage}
             alt={product.name}
             className="w-full h-full object-cover"
           />
@@ -69,7 +125,7 @@ export default function ProductDetail() {
         {/* Buy Button */}
         <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-gray-200">
           <div className="max-w-lg mx-auto">
-            <button className="w-full bg-blue-600 text-white py-3 rounded-full font-semibold">
+            <button className="w-full bg-blue-600 text-white py-3 rounded-full font-semibold hover:bg-blue-700 transition-colors">
               Beli Sekarang
             </button>
           </div>
